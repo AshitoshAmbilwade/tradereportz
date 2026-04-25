@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ArrowLeft, Lock, Mail, LineChart } from "lucide-react";
 
 import { useAuth } from "@/app/contexts/AuthContext";
 
@@ -15,15 +16,25 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
+import { GoogleIcon } from "@/app/components/GoogleIcon";
 
-export default function Login() {
+function LoginForm() {
   const router = useRouter();
-  const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const { login, loginWithGoogle } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const urlError = searchParams.get("error");
+  const displayError =
+    error ||
+    (urlError === "auth"
+      ? "Google sign-in could not be completed. Please try again."
+      : "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,99 +44,177 @@ export default function Login() {
 
     try {
       await login(email, password);
-      router.push("/dashboard");
-    } catch (err) {
-      setError("Invalid email or password");
+      const next = searchParams.get("next") || "/dashboard";
+      router.refresh();
+      router.push(next);
+    } catch (err: unknown) {
+      console.error("Login error:", err);
+
+      setError(
+        err instanceof Error ? err.message : "Login failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
+  const handleGoogleLogin = async () => {
+    setError("");
+    setGoogleLoading(true);
 
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">
-            TradeReportz
-          </h1>
-          <p className="text-muted-foreground">
-            Welcome back! Please login to your account.
-          </p>
+    try {
+      await loginWithGoogle();
+    } catch (err: unknown) {
+      console.error("Google login error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Google login failed. Please try again."
+      );
+      setGoogleLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-linear-to-br from-background via-background to-primary/[0.07]">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center space-y-3">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15">
+            <LineChart className="h-7 w-7" strokeWidth={2} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              TradeReportz
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Welcome back. Sign in to your trading journal.
+            </p>
+          </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
+        <Card className="border-border/60 shadow-lg shadow-black/5 dark:shadow-black/20">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-xl font-semibold">Sign in</CardTitle>
             <CardDescription>
-              Enter your credentials to access your trading journal
+              Use Google for a one-tap sign in, or your email and password.
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="space-y-6">
+            {displayError && (
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+              >
+                {displayError}
+              </div>
+            )}
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 border-border/80 bg-background font-medium shadow-sm hover:bg-accent/50"
+              onClick={handleGoogleLogin}
+              disabled={loading || googleLoading}
+            >
+              <GoogleIcon className="h-5 w-5 shrink-0" />
+              {googleLoading ? "Opening Google…" : "Continue with Google"}
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border/70" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground tracking-wider">
+                  Or with email
+                </span>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
-
-              {error && (
-                <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-                  {error}
-                </div>
-              )}
-
               <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
-
-                <Input
-                  type="email"
-                  placeholder="trader@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
+                <label htmlFor="login-email" className="text-sm font-medium">
+                  Email
+                </label>
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="login-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    className="h-11 pl-9"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Password</label>
-
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <label htmlFor="login-password" className="text-sm font-medium">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="login-password"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    className="h-11 pl-9"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               <Button
                 type="submit"
-                className="w-full"
-                disabled={loading}
+                className="w-full h-11 font-medium"
+                disabled={loading || googleLoading}
               >
-                {loading ? "Logging in..." : "Login"}
+                {loading ? "Signing in…" : "Sign in"}
               </Button>
-
-              <div className="text-center text-sm text-muted-foreground">
-                Don't have an account?{" "}
-                <Link
-                  href="/signup"
-                  className="text-primary hover:underline font-medium"
-                >
-                  Sign up
-                </Link>
-              </div>
-
             </form>
+
+            <p className="text-center text-sm text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/signup"
+                className="font-medium text-primary hover:underline underline-offset-4"
+              >
+                Create one
+              </Link>
+            </p>
           </CardContent>
         </Card>
 
-        <div className="mt-6 text-center">
+        <div className="flex justify-center">
           <Link href="/">
-            <Button variant="ghost">
-              ← Back to Home
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+              <ArrowLeft className="h-4 w-4" />
+              Back to home
             </Button>
           </Link>
         </div>
-
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

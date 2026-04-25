@@ -1,57 +1,59 @@
-import { Trade } from '../contexts/TradeContext';
+import { Trade } from '@/app/contexts/TradeContext';
 
 export const exportToCSV = (trades: Trade[]) => {
-  // Define CSV headers
   const headers = [
     'Date',
     'Symbol',
-    'Asset Type',
+    'Type',
     'Direction',
+    'Session',
+    'Segment',
+    'Trade Type',
+    'Strategy',
     'Entry Price',
     'Exit Price',
-    'Stop Loss',
-    'Take Profit',
-    'Position Size',
-    'Risk %',
-    'Strategy',
-    'Setup Tag',
-    'Timeframe',
-    'Session',
+    'Quantity',
+    'Brokerage',
+    'Broker',
     'P&L',
-    'Emotion Before',
-    'Emotion After',
-    'Mistakes',
+    'Entry Condition',
+    'Exit Condition',
+    'Entry Date',
+    'Exit Date',
+    'Entry Note',
+    'Exit Note',
+    'Remark',
     'Notes',
   ];
 
-  // Convert trades to CSV rows
   const rows = trades.map(trade => [
     trade.tradeDate,
     trade.symbol,
-    trade.assetType,
+    trade.type || '',
     trade.direction,
+    trade.session || '',
+    trade.segment || '',
+    trade.tradeType || '',
+    trade.strategy || '',
     trade.entryPrice,
     trade.exitPrice,
-    trade.stopLoss || '',
-    trade.takeProfit || '',
-    trade.positionSize,
-    trade.riskPercent,
-    trade.strategy,
-    trade.setupTag,
-    trade.timeframe,
-    trade.session,
+    trade.quantity,
+    trade.brokerage || 0,
+    trade.broker || '',
     trade.pnl,
-    trade.emotionBefore || '',
-    trade.emotionAfter || '',
-    trade.mistakes || '',
+    trade.entryCondition || '',
+    trade.exitCondition || '',
+    trade.entryDate || '',
+    trade.exitDate || '',
+    trade.entryNote || '',
+    trade.exitNote || '',
+    trade.remark || '',
     trade.notes || '',
   ]);
 
-  // Combine headers and rows
   const csvContent = [
     headers.join(','),
     ...rows.map(row => row.map(field => {
-      // Escape fields containing commas or quotes
       const stringField = String(field);
       if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
         return `"${stringField.replace(/"/g, '""')}"`;
@@ -60,7 +62,6 @@ export const exportToCSV = (trades: Trade[]) => {
     }).join(','))
   ].join('\n');
 
-  // Create blob and download
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);

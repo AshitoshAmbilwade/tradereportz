@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowLeft,
+  LineChart,
+  Lock,
+  Mail,
+  UserRound,
+} from "lucide-react";
 
 import { useAuth } from "@/app/contexts/AuthContext";
 
@@ -15,10 +22,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card";
+import { GoogleIcon } from "@/app/components/GoogleIcon";
 
-export default function Signup() {
+function SignupForm() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const searchParams = useSearchParams();
+  const { signup, signupWithGoogle } = useAuth();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,6 +36,14 @@ export default function Signup() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const urlError = searchParams.get("error");
+  const displayError =
+    error ||
+    (urlError === "auth"
+      ? "Google sign-up could not be completed. Please try again."
+      : "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,162 +64,215 @@ export default function Signup() {
 
     try {
       await signup(email, password, name);
+      router.refresh();
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Failed to create account");
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to create account"
+      );
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGoogleSignup = async () => {
+    setError("");
+    setGoogleLoading(true);
+
+    try {
+      await signupWithGoogle();
+    } catch (err: unknown) {
+      console.error("Google signup error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Google signup failed. Please try again."
+      );
+      setGoogleLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">
-            TradeReportz
-          </h1>
-
-          <p className="text-muted-foreground">
-            Create your account and start trading smarter.
-          </p>
+    <div className="min-h-screen flex items-center justify-center p-6 bg-linear-to-br from-background via-background to-primary/[0.07]">
+      <div className="w-full max-w-md space-y-8">
+        <div className="text-center space-y-3">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/15">
+            <LineChart className="h-7 w-7" strokeWidth={2} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+              TradeReportz
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Create an account and start tracking trades with clarity.
+            </p>
+          </div>
         </div>
 
-        <Card>
-
-          <CardHeader>
-            <CardTitle>Sign Up</CardTitle>
+        <Card className="border-border/60 shadow-lg shadow-black/5 dark:shadow-black/20">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-xl font-semibold">Create account</CardTitle>
             <CardDescription>
-              Create a free account to get started
+              Sign up with Google in one step, or register with email.
             </CardDescription>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="space-y-6">
+            {displayError && (
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+              >
+                {displayError}
+              </div>
+            )}
 
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-4"
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 border-border/80 bg-background font-medium shadow-sm hover:bg-accent/50"
+              onClick={handleGoogleSignup}
+              disabled={loading || googleLoading}
             >
+              <GoogleIcon className="h-5 w-5 shrink-0" />
+              {googleLoading ? "Opening Google…" : "Sign up with Google"}
+            </Button>
 
-              {error && (
-                <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-                  {error}
-                </div>
-              )}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border/70" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground tracking-wider">
+                  Or with email
+                </span>
+              </div>
+            </div>
 
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-
-                <label className="text-sm font-medium">
-                  Full Name
+                <label htmlFor="signup-name" className="text-sm font-medium">
+                  Full name
                 </label>
-
-                <Input
-                  type="text"
-                  placeholder="John Doe"
-                  value={name}
-                  onChange={(e) =>
-                    setName(e.target.value)
-                  }
-                  required
-                />
-
+                <div className="relative">
+                  <UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="signup-name"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="John Doe"
+                    className="h-11 pl-9"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
-
-                <label className="text-sm font-medium">
+                <label htmlFor="signup-email" className="text-sm font-medium">
                   Email
                 </label>
-
-                <Input
-                  type="email"
-                  placeholder="trader@example.com"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail(e.target.value)
-                  }
-                  required
-                />
-
+                <div className="relative">
+                  <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="signup-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    className="h-11 pl-9"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
-
-                <label className="text-sm font-medium">
+                <label htmlFor="signup-password" className="text-sm font-medium">
                   Password
                 </label>
-
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) =>
-                    setPassword(e.target.value)
-                  }
-                  required
-                />
-
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="signup-password"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="At least 6 characters"
+                    className="h-11 pl-9"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
-
-                <label className="text-sm font-medium">
-                  Confirm Password
+                <label
+                  htmlFor="signup-confirm"
+                  className="text-sm font-medium"
+                >
+                  Confirm password
                 </label>
-
-                <Input
-                  type="password"
-                  placeholder="••••••••"
-                  value={confirmPassword}
-                  onChange={(e) =>
-                    setConfirmPassword(e.target.value)
-                  }
-                  required
-                />
-
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="signup-confirm"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="••••••••"
+                    className="h-11 pl-9"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               <Button
                 type="submit"
-                className="w-full"
-                disabled={loading}
+                className="w-full h-11 font-medium"
+                disabled={loading || googleLoading}
               >
-                {loading
-                  ? "Creating account..."
-                  : "Create Account"}
+                {loading ? "Creating account…" : "Create account"}
               </Button>
-
-              <div className="text-center text-sm text-muted-foreground">
-
-                Already have an account?{" "}
-
-                <Link
-                  href="/login"
-                  className="text-primary hover:underline font-medium"
-                >
-                  Login
-                </Link>
-
-              </div>
-
             </form>
 
+            <p className="text-center text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="font-medium text-primary hover:underline underline-offset-4"
+              >
+                Sign in
+              </Link>
+            </p>
           </CardContent>
-
         </Card>
 
-        <div className="mt-6 text-center">
-
+        <div className="flex justify-center">
           <Link href="/">
-            <Button variant="ghost">
-              ← Back to Home
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+              <ArrowLeft className="h-4 w-4" />
+              Back to home
             </Button>
           </Link>
-
         </div>
-
       </div>
     </div>
+  );
+}
+
+export default function Signup() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        </div>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   );
 }

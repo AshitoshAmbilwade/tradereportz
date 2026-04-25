@@ -1,299 +1,314 @@
-import { useState } from 'react';
-import { useTrades, Trade } from '../contexts/TradeContext';
-import { useAuth } from '../contexts/AuthContext';
-import { Card, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { formatCurrency, formatDate } from '../lib/utils';
-import { Edit, Trash2, Copy, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { useState } from "react";
+import { useTrades, Trade } from "../contexts/TradeContext";
+import { useAuth } from "../contexts/AuthContext";
+import { Card, CardContent } from "./ui/card";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "./ui/dialog";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import { Copy, Edit, Eye, Trash2, TrendingUp, TrendingDown, Calendar, Clock, BarChart2, FileText, ImageIcon } from "lucide-react";
 
 interface TradeListProps {
   onEdit: (tradeId: string) => void;
 }
 
 export default function TradeList({ onEdit }: TradeListProps) {
-  const { trades, deleteTrade, duplicateTrade } = useTrades();
+  const { trades, loading, deleteTrade, duplicateTrade } = useTrades();
   const { user } = useAuth();
-  const [filter, setFilter] = useState<'all' | 'wins' | 'losses'>('all');
-  const [sortBy, setSortBy] = useState<'date' | 'pnl'>('date');
-  const [expandedTrade, setExpandedTrade] = useState<string | null>(null);
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
 
-  const filteredTrades = trades
-    .filter((trade) => {
-      if (filter === 'wins') return trade.pnl > 0;
-      if (filter === 'losses') return trade.pnl < 0;
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'date') {
-        return new Date(b.tradeDate).getTime() - new Date(a.tradeDate).getTime();
-      }
-      return b.pnl - a.pnl;
-    });
-
-  const handleDelete = (tradeId: string) => {
-    if (window.confirm('Are you sure you want to delete this trade?')) {
-      deleteTrade(tradeId);
-    }
+  const handleDelete = async (tradeId: string) => {
+    if (!window.confirm("Are you sure you want to delete this trade?")) return;
+    await deleteTrade(tradeId);
   };
 
-  const toggleExpand = (tradeId: string) => {
-    setExpandedTrade(expandedTrade === tradeId ? null : tradeId);
-  };
+  if (loading) {
+    return (
+      <Card className="border-border/70 shadow-sm">
+        <CardContent className="p-6 text-center text-muted-foreground">Loading trades...</CardContent>
+      </Card>
+    );
+  }
 
   if (trades.length === 0) {
     return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        <Card className="border-2 border-dashed">
-          <CardContent className="p-12 text-center">
-            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
-              <TrendingUp className="text-primary" size={40} />
-            </div>
-            <h3 className="text-2xl font-bold mb-3">No trades yet</h3>
-            <p className="text-muted-foreground max-w-md mx-auto">
-              Start tracking your trades to see analytics and insights. Click "Add Trade" to get started.
-            </p>
-          </CardContent>
-        </Card>
-      </motion.div>
+      <Card className="border-border/70 shadow-sm">
+        <CardContent className="p-8 text-center text-muted-foreground">
+          No trades yet. Add your first trade to get started.
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-      >
-        <Card className="bg-card/50 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <div className="flex flex-wrap gap-4 items-center">
-              <div className="flex gap-2">
-                <Button
-                  variant={filter === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setFilter('all')}
-                  className={filter === 'all' ? 'bg-gradient-to-r from-primary to-purple-600' : ''}
-                >
-                  All ({trades.length})
-                </Button>
-                <Button
-                  variant={filter === 'wins' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setFilter('wins')}
-                  className={filter === 'wins' ? 'bg-gradient-to-r from-green-500 to-emerald-600' : ''}
-                >
-                  Wins ({trades.filter(t => t.pnl > 0).length})
-                </Button>
-                <Button
-                  variant={filter === 'losses' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setFilter('losses')}
-                  className={filter === 'losses' ? 'bg-gradient-to-r from-red-500 to-rose-600' : ''}
-                >
-                  Losses ({trades.filter(t => t.pnl < 0).length})
-                </Button>
-              </div>
-              <div className="flex gap-2 ml-auto">
-                <select
-                  className="h-8 rounded-md border border-input bg-background px-3 text-sm"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'date' | 'pnl')}
-                >
-                  <option value="date">📅 Sort by Date</option>
-                  <option value="pnl">💰 Sort by P&L</option>
-                </select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* Trade Cards */}
-      <AnimatePresence>
-        {filteredTrades.map((trade, index) => (
-          <motion.div
-            key={trade.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
-            layout
-          >
-            <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/30 bg-gradient-to-br from-card to-card/50 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 grid md:grid-cols-5 gap-6">
-                    {/* Column 1: Symbol & Type */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-                          {trade.symbol}
-                        </h3>
-                        <span
-                          className={`px-2.5 py-1 text-xs font-bold rounded-full ${
-                            trade.direction === 'long'
-                              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                              : 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
-                          }`}
-                        >
-                          {trade.direction.toUpperCase()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground capitalize">{trade.assetType}</p>
-                      <p className="text-sm text-muted-foreground">{formatDate(trade.tradeDate)}</p>
-                    </div>
-
-                    {/* Column 2: Prices */}
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1 font-medium">Entry / Exit</p>
-                      <p className="font-bold text-base">
-                        {trade.entryPrice} → {trade.exitPrice}
-                      </p>
-                      {trade.stopLoss && trade.takeProfit && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          <span className="font-medium">SL:</span> {trade.stopLoss} | <span className="font-medium">TP:</span> {trade.takeProfit}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Column 3: Strategy */}
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1 font-medium">Strategy</p>
-                      <p className="font-semibold">{trade.strategy}</p>
-                      <p className="text-xs text-muted-foreground mt-1 px-2 py-1 bg-muted/50 rounded-md inline-block">
-                        {trade.setupTag}
-                      </p>
-                    </div>
-
-                    {/* Column 4: Risk */}
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1 font-medium">Risk & Size</p>
-                      <p className="font-semibold">{trade.riskPercent}% risk</p>
-                      <p className="text-sm text-muted-foreground">Size: {trade.positionSize}</p>
-                    </div>
-
-                    {/* Column 5: P&L */}
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1 font-medium">Profit & Loss</p>
-                      <div className="flex items-center gap-2">
-                        {trade.pnl >= 0 ? (
-                          <TrendingUp className="text-green-500" size={24} />
-                        ) : (
-                          <TrendingDown className="text-red-500" size={24} />
-                        )}
-                        <p
-                          className={`text-2xl font-bold ${
-                            trade.pnl >= 0 ? 'text-green-500' : 'text-red-500'
-                          }`}
-                        >
-                          {formatCurrency(trade.pnl, user?.currency)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => onEdit(trade.id)}
-                      title="Edit"
-                      className="hover:bg-blue-500/10 hover:text-blue-600"
-                    >
-                      <Edit size={18} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => duplicateTrade(trade.id)}
-                      title="Duplicate"
-                      className="hover:bg-purple-500/10 hover:text-purple-600"
-                    >
-                      <Copy size={18} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(trade.id)}
-                      title="Delete"
-                      className="hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 size={18} />
-                    </Button>
-                    {(trade.notes || trade.mistakes || trade.emotionBefore || trade.emotionAfter) && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => toggleExpand(trade.id)}
-                        title={expandedTrade === trade.id ? "Hide details" : "Show details"}
-                        className="hover:bg-primary/10 hover:text-primary"
-                      >
-                        {expandedTrade === trade.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+    <>
+      <Card className="border-border/70 shadow-sm">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="pl-4">Symbol</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Entry</TableHead>
+                <TableHead>Exit</TableHead>
+                <TableHead>Qty</TableHead>
+                <TableHead>P&L</TableHead>
+                <TableHead>Strategy</TableHead>
+                <TableHead className="text-right pr-4">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {trades.map((trade) => (
+                <TableRow key={trade.id} className="hover:bg-muted/20 transition-colors">
+                  <TableCell className="pl-4 font-semibold">{trade.symbol.toUpperCase()}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize">{trade.type ?? "-"}</Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{formatDate(trade.tradeDate)}</TableCell>
+                  <TableCell>{formatCurrency(trade.entryPrice, user?.currency)}</TableCell>
+                  <TableCell>
+                    {trade.exitPrice != null ? formatCurrency(trade.exitPrice, user?.currency) : "-"}
+                  </TableCell>
+                  <TableCell>{trade.quantity}</TableCell>
+                  <TableCell className={trade.pnl >= 0 ? "font-semibold text-emerald-500" : "font-semibold text-rose-500"}>
+                    {formatCurrency(trade.pnl, user?.currency)}
+                  </TableCell>
+                  <TableCell className="max-w-45 truncate text-muted-foreground">
+                    {trade.strategy || "-"}
+                  </TableCell>
+                  <TableCell className="pr-4">
+                    <div className="flex items-center justify-end gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => setSelectedTrade(trade)} title="View trade">
+                        <Eye size={15} />
                       </Button>
-                    )}
-                  </div>
-                </div>
+                      <Button variant="ghost" size="icon" onClick={() => onEdit(trade.id)} title="Edit trade">
+                        <Edit size={15} />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => void duplicateTrade(trade.id)} title="Duplicate trade">
+                        <Copy size={15} />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => void handleDelete(trade.id)} title="Delete trade">
+                        <Trash2 size={15} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
-                {/* Expanded Notes Section */}
-                <AnimatePresence>
-                  {expandedTrade === trade.id && (trade.notes || trade.mistakes || trade.emotionBefore || trade.emotionAfter) && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="mt-6 pt-6 border-t border-border space-y-3 bg-muted/20 -mx-6 -mb-6 p-6 rounded-b-lg">
-                        {trade.emotionBefore && (
-                          <div className="flex gap-2">
-                            <span className="text-sm font-semibold text-muted-foreground min-w-[100px]">Before:</span>
-                            <span className="text-sm px-3 py-1 bg-blue-500/10 text-blue-600 rounded-full">
-                              {trade.emotionBefore}
-                            </span>
-                          </div>
-                        )}
-                        {trade.emotionAfter && (
-                          <div className="flex gap-2">
-                            <span className="text-sm font-semibold text-muted-foreground min-w-[100px]">After:</span>
-                            <span className="text-sm px-3 py-1 bg-purple-500/10 text-purple-600 rounded-full">
-                              {trade.emotionAfter}
-                            </span>
-                          </div>
-                        )}
-                        {trade.mistakes && (
-                          <div>
-                            <span className="text-sm font-semibold text-destructive">⚠️ Mistakes:</span>
-                            <p className="text-sm mt-1 p-3 bg-destructive/5 border border-destructive/20 rounded-md">
-                              {trade.mistakes}
-                            </p>
-                          </div>
-                        )}
-                        {trade.notes && (
-                          <div>
-                            <span className="text-sm font-semibold text-muted-foreground">📝 Notes:</span>
-                            <p className="text-sm mt-1 p-3 bg-background border border-border rounded-md">
-                              {trade.notes}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
-      </AnimatePresence>
+      {/* Trade Detail View Dialog */}
+      <Dialog open={!!selectedTrade} onOpenChange={(open) => !open && setSelectedTrade(null)}>
+        <DialogContent className="sm:max-w-3xl max-h-[92vh] overflow-y-auto p-0 gap-0">
+          {/* visually hidden title satisfies accessibility requirement */}
+          <DialogTitle className="sr-only">
+            {selectedTrade ? `Trade: ${selectedTrade.symbol.toUpperCase()}` : "Trade Details"}
+          </DialogTitle>
+          {selectedTrade && <TradeDetailView trade={selectedTrade} currency={user?.currency} onClose={() => setSelectedTrade(null)} onEdit={(id) => { setSelectedTrade(null); onEdit(id); }} />}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function TradeDetailView({ trade, currency, onClose, onEdit }: { trade: Trade; currency?: string; onClose: () => void; onEdit: (id: string) => void }) {
+  const isProfit = trade.pnl >= 0;
+
+  return (
+    <div className="flex flex-col">
+      {/* Hero Header */}
+      <div className={`px-6 pt-6 pb-5 ${isProfit ? "bg-emerald-500/8 border-b border-emerald-500/20" : "bg-rose-500/8 border-b border-rose-500/20"}`}>
+        <div className="flex items-start justify-between gap-4 pr-8">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-2xl font-bold tracking-wide">{trade.symbol.toUpperCase()}</h2>
+              {trade.type && (
+                <Badge className={trade.type === "Buy" ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30" : "bg-rose-500/15 text-rose-600 border-rose-500/30"} variant="outline">
+                  {trade.type}
+                </Badge>
+              )}
+              {trade.direction && (
+                <Badge variant="outline" className="capitalize">{trade.direction}</Badge>
+              )}
+              {trade.tradeType && (
+                <Badge variant="secondary" className="capitalize">{trade.tradeType}</Badge>
+              )}
+              {trade.segment && (
+                <Badge variant="outline" className="capitalize text-xs">{trade.segment}</Badge>
+              )}
+              {trade.image && (
+                <Badge variant="outline" className="gap-1 text-xs">
+                  <ImageIcon size={10} /> Screenshot
+                </Badge>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+              <span className="flex items-center gap-1">
+                <Calendar size={13} />
+                {formatDate(trade.tradeDate)}
+              </span>
+              {trade.session && (
+                <span className="flex items-center gap-1">
+                  <Clock size={13} />
+                  {trade.session} session
+                </span>
+              )}
+              {trade.broker && (
+                <span className="flex items-center gap-1">
+                  <BarChart2 size={13} />
+                  {trade.broker}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="text-right shrink-0">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-0.5">P&L</p>
+            <div className="flex items-center gap-1.5 justify-end">
+              {isProfit ? <TrendingUp size={20} className="text-emerald-500" /> : <TrendingDown size={20} className="text-rose-500" />}
+              <span className={`text-3xl font-bold ${isProfit ? "text-emerald-500" : "text-rose-500"}`}>
+                {formatCurrency(trade.pnl, currency)}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              {trade.quantity} × ({formatCurrency(trade.entryPrice, currency)} → {trade.exitPrice != null ? formatCurrency(trade.exitPrice, currency) : "open"})
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-6 space-y-6">
+
+        {/* Key Execution Metrics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <MetricCard label="Entry Price" value={formatCurrency(trade.entryPrice, currency)} />
+          <MetricCard label="Exit Price" value={trade.exitPrice != null ? formatCurrency(trade.exitPrice, currency) : "—"} />
+          <MetricCard label="Quantity" value={String(trade.quantity)} />
+          <MetricCard label="Brokerage" value={formatCurrency(trade.brokerage ?? 0, currency)} />
+        </div>
+
+        {/* Dates row */}
+        <div className="grid grid-cols-3 gap-3">
+          <InfoBox label="Trade Date" value={formatDate(trade.tradeDate)} />
+          <InfoBox label="Entry Date" value={trade.entryDate ? formatDate(trade.entryDate) : "—"} />
+          <InfoBox label="Exit Date" value={trade.exitDate ? formatDate(trade.exitDate) : "—"} />
+        </div>
+
+        {/* Classification */}
+        <div>
+          <SectionHeading icon={<BarChart2 size={13} />} title="Classification & Execution Quality" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <InfoBox label="Entry Condition" value={trade.entryCondition ?? "—"} capitalize />
+            <InfoBox label="Exit Condition" value={trade.exitCondition ?? "—"} capitalize />
+            <InfoBox label="Chart Timeframe" value={trade.chartTimeframe ?? "—"} />
+            <InfoBox label="Strategy" value={trade.strategy ?? "—"} />
+            <InfoBox label="Source" value={trade.source ?? "—"} capitalize />
+            <InfoBox label="Direction" value={trade.direction ?? "—"} capitalize />
+          </div>
+        </div>
+
+        {/* Notes & Context */}
+        {(trade.entryNote || trade.exitNote || trade.notes || trade.remark) && (
+          <div>
+            <SectionHeading icon={<FileText size={13} />} title="Notes & Context" />
+            <div className="space-y-2.5">
+              {trade.entryNote && <NoteBox label="Entry Note" value={trade.entryNote} accent="emerald" />}
+              {trade.exitNote && <NoteBox label="Exit Note" value={trade.exitNote} accent="rose" />}
+              {trade.notes && <NoteBox label="General Notes" value={trade.notes} />}
+              {trade.remark && <NoteBox label="Remark" value={trade.remark} accent="amber" />}
+            </div>
+          </div>
+        )}
+
+        {/* Trade Screenshot */}
+        {trade.image && (
+          <div>
+            <SectionHeading icon={<ImageIcon size={13} />} title="Trade Screenshot" />
+            <a href={trade.image} target="_blank" rel="noreferrer" className="block group">
+              <div className="relative overflow-hidden rounded-xl border border-border/60 shadow-md">
+                <img
+                  src={trade.image}
+                  alt={`${trade.symbol} trade chart`}
+                  className="w-full max-h-80 object-contain bg-muted/30 group-hover:scale-[1.01] transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs bg-black/70 text-white px-3 py-1.5 rounded-full">
+                    Click to open full size
+                  </span>
+                </div>
+              </div>
+            </a>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex justify-end gap-2 pt-1 border-t border-border/40">
+          <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
+          <Button size="sm" onClick={() => onEdit(trade.id)} className="gap-1.5">
+            <Edit size={14} />
+            Edit Trade
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionHeading({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+      {icon}
+      {title}
+    </div>
+  );
+}
+
+function MetricCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-center">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">{label}</p>
+      <p className="text-sm font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function InfoBox({ label, value, capitalize }: { label: string; value: string; capitalize?: boolean }) {
+  return (
+    <div className="rounded-md border border-border/40 bg-muted/20 px-3 py-2.5">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`text-sm font-medium mt-0.5 ${capitalize ? "capitalize" : ""}`}>{value}</p>
+    </div>
+  );
+}
+
+function NoteBox({ label, value, accent }: { label: string; value: string; accent?: "emerald" | "rose" | "amber" }) {
+  const accentClass =
+    accent === "emerald" ? "border-l-emerald-500 bg-emerald-500/5" :
+    accent === "rose" ? "border-l-rose-500 bg-rose-500/5" :
+    accent === "amber" ? "border-l-amber-500 bg-amber-500/5" :
+    "border-l-border bg-muted/20";
+
+  return (
+    <div className={`rounded-md border border-border/40 border-l-4 p-3 ${accentClass}`}>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">{label}</p>
+      <p className="text-sm leading-relaxed">{value}</p>
     </div>
   );
 }
