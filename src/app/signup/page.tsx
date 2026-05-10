@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -27,7 +27,7 @@ import { GoogleIcon } from "@/app/components/GoogleIcon";
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signup, signupWithGoogle } = useAuth();
+  const { signup, signupWithGoogle, isAuthenticated, authInitialized } = useAuth();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -37,6 +37,12 @@ function SignupForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    if (authInitialized && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [authInitialized, isAuthenticated, router]);
 
   const urlError = searchParams.get("error");
   const displayError =
@@ -91,6 +97,14 @@ function SignupForm() {
       setGoogleLoading(false);
     }
   };
+
+  if (!authInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-linear-to-br from-background via-background to-primary/[0.07]">

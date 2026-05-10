@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/contexts/AuthContext";
 import { Button } from "@/app/components/ui/button";
 import {
   TrendingUp,
@@ -220,7 +222,7 @@ const fadeUp = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, delay: i * 0.1, ease: "easeOut" },
+    transition: { duration: 0.5, delay: i * 0.1, ease: "easeOut" as const },
   }),
 };
 
@@ -229,12 +231,20 @@ const fadeUp = {
 export default function Landing() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { isAuthenticated, authInitialized } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     const handle = () => setScrolled(window.scrollY > 24);
     window.addEventListener("scroll", handle);
     return () => window.removeEventListener("scroll", handle);
   }, []);
+
+  useEffect(() => {
+    if (authInitialized && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [authInitialized, isAuthenticated, router]);
 
   return (
     <div className="min-h-screen bg-[#07090f] text-white overflow-x-hidden selection:bg-emerald-500/30">
@@ -277,24 +287,38 @@ export default function Landing() {
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
-            <Link href="/login">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white/60 hover:text-white hover:bg-white/[0.06] h-9"
-              >
-                Log in
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button
-                size="sm"
-                className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold h-9 px-5 shadow-lg shadow-emerald-500/25 transition-all"
-              >
-                Start Free
-                <ArrowRight size={14} className="ml-1" />
-              </Button>
-            </Link>
+            {authInitialized && isAuthenticated ? (
+              <Link href="/dashboard">
+                <Button
+                  size="sm"
+                  className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold h-9 px-5 shadow-lg shadow-emerald-500/25 transition-all"
+                >
+                  Go to Dashboard
+                  <ArrowRight size={14} className="ml-1" />
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white/60 hover:text-white hover:bg-white/[0.06] h-9"
+                  >
+                    Log in
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button
+                    size="sm"
+                    className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold h-9 px-5 shadow-lg shadow-emerald-500/25 transition-all"
+                  >
+                    Start Free
+                    <ArrowRight size={14} className="ml-1" />
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile toggle */}
@@ -329,16 +353,26 @@ export default function Landing() {
               </a>
             ))}
             <div className="flex gap-3 pt-2">
-              <Link href="/login" className="flex-1">
-                <Button variant="outline" className="w-full border-white/10 text-white/70 hover:bg-white/5">
-                  Log in
-                </Button>
-              </Link>
-              <Link href="/signup" className="flex-1">
-                <Button className="w-full bg-emerald-500 hover:bg-emerald-400">
-                  Start Free
-                </Button>
-              </Link>
+              {authInitialized && isAuthenticated ? (
+                <Link href="/dashboard" className="flex-1">
+                  <Button className="w-full bg-emerald-500 hover:bg-emerald-400">
+                    Go to Dashboard
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <Link href="/login" className="flex-1">
+                    <Button variant="outline" className="w-full border-white/10 text-white/70 hover:bg-white/5">
+                      Log in
+                    </Button>
+                  </Link>
+                  <Link href="/signup" className="flex-1">
+                    <Button className="w-full bg-emerald-500 hover:bg-emerald-400">
+                      Start Free
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}
@@ -539,8 +573,8 @@ export default function Landing() {
                             color: "#fff",
                             fontSize: 12,
                           }}
-                          formatter={(value: number | string) => [
-                            `$${Number(value).toLocaleString()}`,
+                          formatter={(value) => [
+                            `$${Number(value ?? 0).toLocaleString()}`,
                             "Portfolio",
                           ]}
                         />

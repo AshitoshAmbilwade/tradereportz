@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense,useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Lock, Mail, LineChart } from "lucide-react";
@@ -21,13 +21,20 @@ import { GoogleIcon } from "@/app/components/GoogleIcon";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, isAuthenticated, authInitialized } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    if (authInitialized && isAuthenticated) {
+      const next = searchParams.get("next") || "/dashboard";
+      router.replace(next);
+    }
+  }, [authInitialized, isAuthenticated, router, searchParams]);
 
   const urlError = searchParams.get("error");
   const displayError =
@@ -74,6 +81,14 @@ function LoginForm() {
       setGoogleLoading(false);
     }
   };
+
+  if (!authInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-linear-to-br from-background via-background to-primary/[0.07]">

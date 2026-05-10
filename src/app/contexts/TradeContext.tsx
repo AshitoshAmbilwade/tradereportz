@@ -280,6 +280,7 @@ export const TradeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const { data, error } = await supabase
         .from("trades")
         .select("*")
+        .eq("user_id", user.id)
         .order("trade_date", { ascending: false });
 
       if (error) {
