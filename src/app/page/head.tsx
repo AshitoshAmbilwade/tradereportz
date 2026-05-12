@@ -1,7 +1,6 @@
-import { getPricingFAQSchema } from "@/lib/seo";
-import { buildPricingPageSeoMetadata } from "@/lib/aiSeo";
+import { buildHomePageSeoMetadata } from "@/lib/aiSeo";
 
-const seo = buildPricingPageSeoMetadata();
+const seo = buildHomePageSeoMetadata();
 
 export default function Head() {
   return (
@@ -19,12 +18,6 @@ export default function Head() {
       <meta name="twitter:title" content={seo.title} />
       <meta name="twitter:description" content={seo.description} />
       <link rel="canonical" href={seo.url} />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(getPricingFAQSchema()),
-        }}
-      />
     </>
   );
 }

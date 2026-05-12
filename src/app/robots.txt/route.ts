@@ -1,4 +1,4 @@
-export default function Robots() {
+export function GET() {
   const content = `User-agent: *
 Allow: /
 Disallow: /dashboard

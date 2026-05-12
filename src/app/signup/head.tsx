@@ -1,12 +1,14 @@
-import { authSeo } from "@/lib/seo";
+import { buildAuthPageSeoMetadata } from "@/lib/aiSeo";
+
+const seo = buildAuthPageSeoMetadata("signup");
 
 export default function Head() {
   return (
     <>
-      <title>{authSeo.signup.title}</title>
-      <meta name="description" content={authSeo.signup.description} />
+      <title>{seo.title}</title>
+      <meta name="description" content={seo.description} />
       <meta name="robots" content="noindex, nofollow" />
-      <link rel="canonical" href={authSeo.signup.url} />
+      <link rel="canonical" href={seo.url} />
     </>
   );
 }

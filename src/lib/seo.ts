@@ -5,23 +5,31 @@ export const siteDescription =
 export const twitterHandle = "@TradeReportz";
 export const siteKeywords = [
   "trading journal",
+  "trade journal",
   "trade analytics",
   "AI trading insights",
   "paper trading",
+  "paper trading journal",
+  "trading journal app",
+  "stock trading journal",
+  "crypto trading journal",
   "trade performance tracking",
   "trade logging",
 ];
 
 export const homepageSeo = {
-  title: "TradeReportz — AI Trading Journal, Analytics & Paper Trading",
+  title: "TradeReportz — Trading Journal, AI Trade Analytics & Paper Trading",
   description:
-    "Log trades, analyze performance, and get AI-powered insights with TradeReportz. Built for active traders, stock market traders, crypto traders, and future paper trading workflows.",
+    "Log trades, analyze performance, and get AI-powered insights with TradeReportz. Designed for traders, investors, and future paper trading workflows.",
   keywords: [
     "trading journal",
+    "trade journal",
     "AI trading journal",
     "paper trading app",
     "trade analytics",
-    "trade log",
+    "stock trading journal",
+    "crypto trading journal",
+    "trade performance",
   ],
   url: `${siteUrl}/`,
 };
