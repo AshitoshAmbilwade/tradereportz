@@ -405,7 +405,7 @@ export default function Landing() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl md:text-[72px] font-bold leading-[1.08] tracking-[-0.02em] mb-6"
           >
-            <span className="text-white">The Journal That</span>
+            <span className="text-white">The Trading Journal That</span>
             <br />
             <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent">
               Makes You a Better Trader
@@ -419,8 +419,9 @@ export default function Landing() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="text-lg md:text-xl text-white/45 max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            Track every trade, uncover hidden patterns, and receive AI-powered
-            coaching — all in one professional dashboard built for serious traders.
+            Log every trade, spot bias, and improve your edge with an AI-powered
+            trading journal that combines trade logging, performance analytics,
+            and real trader coaching in one dashboard.
           </motion.p>
 
           {/* CTA row */}
@@ -435,7 +436,7 @@ export default function Landing() {
                 size="lg"
                 className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 h-12 text-[15px] shadow-2xl shadow-emerald-500/20 transition-all hover:shadow-emerald-400/30 hover:scale-[1.02]"
               >
-                Start Free — No Card Required
+                Start Your Trading Journal Free
                 <ArrowRight size={16} className="ml-2" />
               </Button>
             </Link>
@@ -451,6 +452,28 @@ export default function Landing() {
             </Link>
           </motion.div>
 
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.45 }}
+            className="mt-10 rounded-[32px] border border-white/[0.06] bg-white/5 p-8 text-left max-w-3xl mx-auto"
+          >
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+              A better journal for your trading process
+            </h2>
+            <p className="text-white/60 leading-relaxed">
+              TradeReportz helps you capture every trade detail, including symbol,
+              entry, exit, size, timeframe, and emotion. Use the journal to
+              discover your best setups, eliminate negative habits, and improve
+              consistency over time.
+            </p>
+            <p className="text-white/60 leading-relaxed mt-4">
+              The platform is built for active traders today, with paper trading
+              support coming soon. That means you can train your strategy with a
+              real trading journal before you risk capital.
+            </p>
+          </motion.div>
+
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -458,7 +481,7 @@ export default function Landing() {
             className="text-[12px] text-white/25 mt-4 flex items-center justify-center gap-1"
           >
             <Shield size={11} />
-            14-day free trial &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; Cancel anytime
+            14-day free trial · No credit card · Cancel anytime
           </motion.p>
         </div>
 
@@ -1038,18 +1061,21 @@ export default function Landing() {
               COMPANY
             </div>
             <ul className="space-y-2.5">
-              {["About", "Blog", "Privacy Policy", "Terms of Service"].map(
-                (l) => (
-                  <li key={l}>
-                    <a
-                      href="#"
-                      className="text-[13px] text-white/40 hover:text-white/70 transition-colors"
-                    >
-                      {l}
-                    </a>
-                  </li>
-                )
-              )}
+              {[
+                { label: "About", href: "#features" },
+                { label: "Blog", href: "#pricing" },
+                { label: "Privacy Policy", href: "/privacy-policy" },
+                { label: "Terms of Service", href: "/terms-of-service" },
+              ].map((item) => (
+                <li key={item.label}>
+                  <a
+                    href={item.href}
+                    className="text-[13px] text-white/40 hover:text-white/70 transition-colors"
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

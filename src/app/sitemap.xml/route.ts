@@ -10,6 +10,14 @@ export function GET() {
       `    <loc>https://tradereportz.in/pricing</loc>\n` +
       `    <lastmod>${new Date().toISOString()}</lastmod>\n` +
       `  </url>\n` +
+      `  <url>\n` +
+      `    <loc>https://tradereportz.in/privacy-policy</loc>\n` +
+      `    <lastmod>${new Date().toISOString()}</lastmod>\n` +
+      `  </url>\n` +
+      `  <url>\n` +
+      `    <loc>https://tradereportz.in/terms-of-service</loc>\n` +
+      `    <lastmod>${new Date().toISOString()}</lastmod>\n` +
+      `  </url>\n` +
       `</urlset>\n`,
     {
       headers: {
