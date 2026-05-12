@@ -6,6 +6,7 @@ import "./globals.css";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/app/contexts/AuthContext";
 import { TradeProvider } from "@/app/contexts/TradeContext";
+import { siteDescription, siteKeywords, siteName, siteUrl, twitterHandle } from "@/lib/seo";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,8 +19,41 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TradeReportz",
-  description: "AI Powered Trading Journal and Analytics Platform",
+  title: {
+    default: siteName,
+    template: "%s | TradeReportz",
+  },
+  description: siteDescription,
+  metadataBase: new URL(siteUrl),
+  keywords: siteKeywords,
+  openGraph: {
+    title: siteName,
+    description: siteDescription,
+    url: siteUrl,
+    siteName: siteName,
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteName,
+    description: siteDescription,
+    creator: twitterHandle,
+  },
+  alternates: {
+    canonical: siteUrl,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
 export default function RootLayout({
